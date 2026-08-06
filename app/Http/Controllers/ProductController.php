@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -14,7 +14,7 @@ class ProductController extends Controller
     */
     public function index(): JsonResponse
     {
-        $products = Product::lastest()->paginate(10);
+        $products = Product::latest()->paginate(10);
         return response()->json([
             'success' => true,
             'message' => 'Get list products successfully',
@@ -27,12 +27,21 @@ class ProductController extends Controller
     */
     public function store(ProductRequest $request): JsonResponse
     {
-        $product = Product::create($request->validated());
+        $data = $request->validated();
+
+        // Xử lý lưu file ảnh nếu có tải lên
+        if ($request->hasFile('image')) {
+            // Tải file lên storage/app/public/products
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product = Product::create($data);
+
         return response()->json([
             'success' => true,
             'message' => 'Product created successfully',
             'data' => $product
-        ],201);
+        ], 201);
     }
 
     /**
@@ -61,26 +70,75 @@ class ProductController extends Controller
     public function update(ProductRequest $request, string $id): JsonResponse
     {
         $product = Product::find($id);
-        if(!$product){
+        if (!$product) {
             return response()->json([
                 'success' => false,
                 'message' => 'Product not found',
-            ],404);
+            ], 404);
         }
 
-        $product->update($request->validated());
+        $data = $request->validated();
+
+        // Xử lý cập nhật file ảnh
+        if ($request->hasFile('image')) {
+            // Xóa file ảnh cũ nếu tồn tại trong storage
+            // if ($product->image && Storage::disk('public')->exists($product->image)) {
+            //     Storage::disk('public')->delete($product->image);
+            // }
+            $this->deleteProductImage($product->image);
+            // Lưu file ảnh mới
+            $data['image'] = $request->file('image')->store('products', 'public');
+        } else {
+            // Giữ lại ảnh cũ nếu lần update này không tải ảnh mới
+            unset($data['image']);
+        }
+
+        $product->update($data);
+
         return response()->json([
             'success' => true,
             'message' => 'Product updated successfully',
             'data' => $product
-        ],200);
+        ], 200);
     }
 
     /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Product $product)
+     * DELETE /api/products/{id}
+    */
+    public function destroy(string $id): JsonResponse
     {
-        //
+        $product = Product::find($id);
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found',
+            ], 404);
+        }
+
+        // Xóa file ảnh trong storage khi xóa sản phẩm
+        $this->deleteProductImage($product->image);
+
+        $product->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully',
+        ], 200);
+    }
+
+    private function deleteProductImage(?string $imagePath): void
+    {
+        if (!$imagePath) {
+            return;
+        }
+
+        // Loại bỏ các tiền tố thừa nếu có (như /storage/ hay storage/)
+        $relativePath = ltrim(str_replace('/storage/', '', $imagePath), '/');
+        $relativePath = ltrim(str_replace('storage/', '', $relativePath), '/');
+
+        // Thực hiện kiểm tra và xóa file trên disk 'public'
+        if (Storage::disk('public')->exists($relativePath)) {
+            Storage::disk('public')->delete($relativePath);
+        }
     }
 }

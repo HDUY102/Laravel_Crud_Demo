@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('nameProduct');
             $table->decimal('price', 10, 0);
-            $table->tinyInteger('status')->default('1');
+            $table->tinyInteger('status')->default(1);
             $table->string('image')->nullable();
             $table->timestamps();
         });

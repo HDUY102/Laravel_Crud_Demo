@@ -22,7 +22,7 @@ class ProductRequest extends FormRequest
             'nameProduct' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'price' => [$isUpdate ? 'sometimes' : 'required', 'numeric', 'min:0'],
             'status' => ['nullable', 'integer', 'in:0,1'],
-            'image' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ];
     }
 }
