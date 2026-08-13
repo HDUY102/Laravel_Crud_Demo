@@ -4,24 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
+use App\Repositories\Eloquent\ProductRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
-class ProductController extends Controller
+class ProductController extends BaseApiController
 {
-    /**
-     * GET /api/products - Lấy danh sách sản phẩm (Phân trang 10 mục)
-    */
-    public function index(): JsonResponse
+    public function __construct(ProductRepository $repository)
     {
-        $products = Product::latest()->paginate(10);
-        return response()->json([
-            'success' => true,
-            'message' => 'Get list products successfully',
-            'data' => $products
-        ], 200);
+        $this->repository = $repository;
     }
-
     /**
      * POST /api/products
     */
@@ -35,33 +27,13 @@ class ProductController extends Controller
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
-        $product = Product::create($data);
+        $product = $this->repository->create($data);
 
         return response()->json([
             'success' => true,
             'message' => 'Product created successfully',
             'data' => $product
         ], 201);
-    }
-
-    /**
-     * GET /api/products/{id}
-    */
-    public function show(string $id): JsonResponse
-    {
-        $product = Product::find($id);
-        if (!$product){
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Get product successfully',
-            'data' => $product
-        ], 200);
     }
 
     /**
@@ -93,7 +65,7 @@ class ProductController extends Controller
             unset($data['image']);
         }
 
-        $product->update($data);
+        $this->repository->update($id, $data);
 
         return response()->json([
             'success' => true,
@@ -105,7 +77,7 @@ class ProductController extends Controller
     /**
      * DELETE /api/products/{id}
     */
-    public function destroy(string $id): JsonResponse
+    public function destroy(mixed $id): JsonResponse
     {
         $product = Product::find($id);
         if (!$product) {
@@ -118,7 +90,7 @@ class ProductController extends Controller
         // Xóa file ảnh trong storage khi xóa sản phẩm
         $this->deleteProductImage($product->image);
 
-        $product->delete();
+        $this->repository->delete($id);
 
         return response()->json([
             'success' => true,

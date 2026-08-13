@@ -1,5 +1,6 @@
-<!-- Generic Database Query Handling Class -->
 <?php
+// Generic Database Query Handling Class 
+namespace App\Repositories\Eloquent;
 
 use Illuminate\Database\Eloquent\Model;
 
