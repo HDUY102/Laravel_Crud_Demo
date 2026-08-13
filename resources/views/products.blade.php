@@ -52,7 +52,7 @@
             </div>
 
             <!-- Pagination -->
-            <div id="pagination" class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between"></div>
+            <div id="pagination" class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-center gap-1.5"></div>
         </div>
     </div>
 
