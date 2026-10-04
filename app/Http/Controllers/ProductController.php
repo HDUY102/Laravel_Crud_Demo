@@ -5,15 +5,33 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Repositories\Eloquent\ProductRepository;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 
 class ProductController extends BaseApiController
 {
+    use AuthorizesRequests;
+    
     public function __construct(ProductRepository $repository)
     {
         $this->repository = $repository;
     }
+
+    public function index(Request $request): JsonResponse // Thêm Request $request
+    {
+        $this->authorize('product.view');
+
+        $perPage = $request->get('per_page', 10);
+        $products = $this->repository->paginate($perPage);
+        
+        return response()->json([
+            'success' => true, 
+            'data' => $products
+        ]);
+    }
+
     /**
      * POST /api/products
     */
